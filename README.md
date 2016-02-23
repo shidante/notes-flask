@@ -9,7 +9,7 @@
 from flask import Flask
 app = Flask(__name__)
 ```
-Flask 类的构造函数只有一个必须指定的参数，即程序主模块或包的名字。在大多数程序中，Python 的__name__ 变量就是所需的值。
+Flask 类的构造函数只有一个必须指定的参数，即程序主模块或包的名字。在大多数程序中，Python 的`__name__`变量就是所需的值。
 
 - 02. **路由**
 
