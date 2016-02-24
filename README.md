@@ -100,6 +100,7 @@ session           请求上下文        用户会话，用于存储请求之间
 如果使用这些变量时我们没有激活程序上下文或请求上下文，就会导致错误。
 
 - 06. **请求钩子(hooks)**
+
 在处理请求之前或之后执行代码，请求钩子使用修饰器实现。Flask 支持以下4 种钩子。
 ```
 • before_first_request:  Register a function to run before the first request is handled.
@@ -109,6 +110,7 @@ session           请求上下文        用户会话，用于存储请求之间
 ```
 
 - 07. **模板**
+
 模板是一个包含响应文本的文件，其中包含用占位变量表示的动态部分，其具体值只在请求的上下文中才能知道。使用真实值替换变量，再返回最终得到的响应字符串，这一过程称为渲染。下文为示例：
 
 ```
@@ -152,6 +154,7 @@ Jinja2 能识别所有类型的变量，甚至是一些复杂的类型，例如�
 `Hello, {{ name|capitalize }}`
 
 **Jinja2变量过滤器**
+
 ```
 过滤器名                说明
 safe                渲染值时不转义
@@ -245,12 +248,82 @@ striptags           渲染之前把值中所有的HTML 标签都删掉
 {% endblock %}
 ```
 
+- 08. 自定义错误页面
+
+Flask允许程序使用基于模板的自定义错误页面。
+```
+@app.errorhandler(404)
+def page_not_found(e):
+	return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+	return render_template('500.html'), 500
+```
+
+- 09. 链接
+
+用于在模板中辅助构建动态的URL链接，有以下三种形式：
+```
+# 以视图函数名作为参数
+url_for('index')
+>>> /  # 相对地址
+
+url_for('index', _external=True)
+>>> http://localhost:5000/  # 绝对地址
+
+# 以动态路由中的参数作为关键字参数传入
+url_for('user', name='john', _external=True)
+>>> http://localhost:5000/user/john
+
+# 不以动态路由中的参数传入，而是额外的参数
+url_for('index', page=2)
+>>> /?page=2
+```
+生成连接程序内不同路由的链接时，使用相对地址就足够了。如果要生成在浏览器之外使用的链接，则必须使用绝对地址，例如在电子邮件中发送的链接。
+
+- 10. 静态文件
+
+默认设置下，Flask程序有一个名为static的特殊路由，用于引用静态文件，即/static/<filename>,例如：
+```
+url_for('static', filename="css/styles.css", _external=True)
+>>> http://localhost:5000/static/css/style.css
+```
 
 
+- 11. Flash消息
 
+请求完成后，有时需要让用户知道状态发生了变化。这里可以使用确认消息、警告或者错误提醒，`flash()`函数可实现这种效果。
+```
+# hello.py
 
-
-
+from flask import Flask, render_template, session, redirect, url_for,flash
+@app.route('/', methods=['GET','POST'])
+def index():
+	form = NameForm()
+	if form.validate_on_submit():
+		old_name = session.get('name')
+		if old_name is not None and old_name != form.name.data:
+			flash('Looks like you have changed your name!')
+		session['name'] = form.name.data
+		return redirect(url_for('index'))
+	return render_template('index.html', form=form, name=session.get('name'))
+```
+仅调用`flash()`函数并不能把消息显示出来，程序使用的模板要渲染这些消息。最好在基模板中渲染Flash消息，因为这样所有页面都能使用这些消息。Flask把`get_flashed_messages()`函数开放给模板，用来获取并渲染消息。
+```
+# base.html
+{% block content %}
+<div class="container">
+	{% for message in get_flashed_messages() %}
+	<div class="alert alert-warning">
+		<button type="button" class="close" data-dismiss="alert">&times;</button>  # &times; 是 X 关闭按钮的转义符
+		{{ message }}
+	</div>
+	{% endfor %}
+	{% block page_content %}{% endblock %}
+</div>
+```
+在模板中使用循环是因为在之前的请求循环中每次调用`flash()`函数时都会生成一个消息，所以可能有多个消息在排队等待显示。`get_flashed_messages()`函数获取的消息在下次调用时不会再次返回，因此Flash消息只显示一次，然后就消失了。
 
 
 
